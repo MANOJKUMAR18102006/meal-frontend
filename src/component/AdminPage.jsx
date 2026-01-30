@@ -14,6 +14,12 @@ const AdminPage = () => {
     const [lunch, setLunch] = useState("");
     const [dinner, setDinner] = useState("");
 
+    const handleLogout = () => {
+        sessionStorage.clear();
+        toast.success("Logged out successfully");
+        navigate("/");
+    };
+
     useEffect(() => {
         fetchFeedbacks();
         fetchContacts();
@@ -103,9 +109,17 @@ const AdminPage = () => {
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
             <div className="bg-emerald-800 text-white py-6">
-                <div className="max-w-6xl mx-auto px-6">
-                    <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-                    <p className="text-emerald-200 mt-2">Manage meals and view user feedback</p>
+                <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
+                    <div>
+                        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+                        <p className="text-emerald-200 mt-2">Manage meals and view user feedback</p>
+                    </div>
+                    <button 
+                        onClick={handleLogout}
+                        className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold transition"
+                    >
+                        Logout
+                    </button>
                 </div>
             </div>
 
