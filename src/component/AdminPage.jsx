@@ -29,7 +29,7 @@ const AdminPage = () => {
         try {
             const token = sessionStorage.getItem("token");
             console.log('Fetching feedbacks with token:', token);
-            const response = await axios.get("http://localhost:3000/feedback", {
+            const response = await axios.get("https://meal-backend-64oz.onrender.com/feedback", {
                 headers: { Authorization: token }
             });
             console.log('Feedbacks response:', response.data);
@@ -42,7 +42,7 @@ const AdminPage = () => {
     const fetchContacts = async () => {
         try {
             const token = sessionStorage.getItem("token");
-            const response = await axios.get("http://localhost:3000/contact", {
+            const response = await axios.get("https://meal-backend-64oz.onrender.com/contact", {
                 headers: { Authorization: token }
             });
             setContacts(response.data);
@@ -78,7 +78,7 @@ const AdminPage = () => {
             const token = sessionStorage.getItem("token");
 
             await axios.post(
-                "http://localhost:3000/meal/add",
+                "https://meal-backend-64oz.onrender.com/meal/add",
                 {
                     week,
                     day,

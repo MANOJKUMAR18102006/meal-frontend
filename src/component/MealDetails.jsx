@@ -12,7 +12,7 @@ const MealDetails = ({ selectedWeek, selectedDay }) => {
       setError("");
       try {
         const {data} = await axios.get(
-          `http://localhost:3000/meal/get?week=${selectedWeek}&day=${selectedDay}`
+          `https://meal-backend-64oz.onrender.com/meal/get?week=${selectedWeek}&day=${selectedDay}`
         );
         setMeal(data);
       } catch (err) {

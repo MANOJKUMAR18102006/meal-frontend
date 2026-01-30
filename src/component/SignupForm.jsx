@@ -25,7 +25,7 @@ const SignupForm = () => {
     const handleSumbit = async (e) => {
         e.preventDefault();
         try {
-            const {data}=await axios.post("http://localhost:3000/auth/register",{
+            const {data}=await axios.post("https://meal-backend-64oz.onrender.com/auth/register",{
                 name:name,
                 email:email,
                 password:passwordRef.current.value,

@@ -15,7 +15,7 @@ const Feedback = () => {
             const token = sessionStorage.getItem('token');
             console.log('Submitting feedback with token:', token);
             console.log('Feedback data:', formData);
-            await axios.post('http://localhost:3000/feedback/add', formData, {
+            await axios.post('https://meal-backend-64oz.onrender.com/feedback/add', formData, {
                 headers: { Authorization: token }
             });
             
