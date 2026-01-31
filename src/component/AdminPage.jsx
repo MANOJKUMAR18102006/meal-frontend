@@ -6,7 +6,8 @@ import { toast } from "react-toastify";
 const AdminPage = () => {
     const navigate = useNavigate();
     const [feedbacks, setFeedbacks] = useState([]);
-    const [contacts, setContacts] = useState([]);
+    const [meals, setMeals] = useState([]);
+    const [editingMeal, setEditingMeal] = useState(null);
 
     const [week, setWeek] = useState("");
     const [day, setDay] = useState("");
@@ -22,7 +23,7 @@ const AdminPage = () => {
 
     useEffect(() => {
         fetchFeedbacks();
-        fetchContacts();
+        fetchMeals();
     }, []);
 
     const fetchFeedbacks = async () => {
@@ -39,15 +40,59 @@ const AdminPage = () => {
         }
     };
 
-    const fetchContacts = async () => {
+    const fetchMeals = async () => {
         try {
             const token = sessionStorage.getItem("token");
-            const response = await axios.get("https://meal-backend-64oz.onrender.com/contact", {
-                headers: { Authorization: token }
-            });
-            setContacts(response.data);
+            console.log('Fetching meals with token:', token);
+            
+            // Since /meal/all gives 404, let's try to fetch meals for all weeks/days
+            const weeks = ['Week1', 'Week2', 'Week3', 'Week4'];
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            const allMeals = [];
+            
+            for (const week of weeks) {
+                for (const day of days) {
+                    try {
+                        const response = await axios.get(`https://meal-backend-64oz.onrender.com/meal/get?week=${week}&day=${day}`);
+                        if (response.data) {
+                            allMeals.push(response.data);
+                        }
+                    } catch (error) {
+                        // Ignore 404s for non-existent meals
+                        if (error.response?.status !== 404) {
+                            console.log(`Error fetching ${week} ${day}:`, error.message);
+                        }
+                    }
+                }
+            }
+            
+            console.log('Fetched meals:', allMeals);
+            setMeals(allMeals);
         } catch (error) {
-            console.log('Contact fetch error:', error.response?.data || error.message);
+            console.log('Meals fetch error:', error.response?.data || error.message);
+            toast.error('Failed to fetch meals');
+        }
+    };
+
+    const handleEdit = (meal) => {
+        setEditingMeal(meal);
+        setWeek(meal.week);
+        setDay(meal.day);
+        setBreakfast(meal.breakfast);
+        setLunch(meal.lunch);
+        setDinner(meal.dinner);
+    };
+
+    const handleDelete = async (id) => {
+        if (window.confirm('Are you sure you want to delete this meal?')) {
+            try {
+                // Since backend delete route doesn't exist, remove from local state
+                const updatedMeals = meals.filter(meal => meal._id !== id);
+                setMeals(updatedMeals);
+                toast.success("Meal removed from view (backend delete not available)");
+            } catch (error) {
+                toast.error("Failed to delete meal");
+            }
         }
     };
 
@@ -77,31 +122,34 @@ const AdminPage = () => {
         try {
             const token = sessionStorage.getItem("token");
 
-            await axios.post(
-                "https://meal-backend-64oz.onrender.com/meal/add",
-                {
-                    week,
-                    day,
-                    breakfast,
-                    lunch,
-                    dinner
-                },
-                {
-                    headers: {
-                        Authorization:token
-                    }
-                }
-            );
+            if (editingMeal) {
+                // Since backend update route doesn't exist, update local state
+                const updatedMeals = meals.map(meal => 
+                    meal._id === editingMeal._id 
+                        ? { ...meal, week, day, breakfast, lunch, dinner }
+                        : meal
+                );
+                setMeals(updatedMeals);
+                toast.success("Meal updated in view (backend update not available)");
+                setEditingMeal(null);
+            } else {
+                await axios.post(
+                    "https://meal-backend-64oz.onrender.com/meal/add",
+                    { week, day, breakfast, lunch, dinner },
+                    { headers: { Authorization: token } }
+                );
+                toast.success("Meal added successfully");
+            }
 
-            toast.success("meal added succesfully");
             setWeek("");
             setDay("");
             setBreakfast("");
             setLunch("");
             setDinner("");
+            fetchMeals();
         } catch (err) {
-            console.log('Add meal error:', err.response?.data || err.message);
-            toast.error(err.response?.data?.error || "Failed to add meal");
+            console.log('Add/Update meal error:', err.response?.data || err.message);
+            toast.error(err.response?.data?.error || "Failed to save meal");
         }
     };
 
@@ -193,8 +241,24 @@ const AdminPage = () => {
                             </div>
 
                             <button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 px-6 rounded-lg font-semibold transition" onClick={handleAdd}>
-                                Add Meal Plan
+                                {editingMeal ? 'Update Meal' : 'Add Meal Plan'}
                             </button>
+                            {editingMeal && (
+                                <button 
+                                    type="button"
+                                    onClick={() => {
+                                        setEditingMeal(null);
+                                        setWeek("");
+                                        setDay("");
+                                        setBreakfast("");
+                                        setLunch("");
+                                        setDinner("");
+                                    }}
+                                    className="w-full bg-gray-500 hover:bg-gray-600 text-white py-2 px-6 rounded-lg font-semibold transition"
+                                >
+                                    Cancel Edit
+                                </button>
+                            )}
                         </form>
                     </div>
 
@@ -231,6 +295,63 @@ const AdminPage = () => {
                                 ))
                             )}
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Meal Management Section */}
+            <div className="max-w-6xl mx-auto px-6 pb-8">
+                <div className="bg-white p-6 rounded-lg shadow-md">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                        <span className="bg-yellow-100 p-2 rounded-lg mr-3">📋</span>
+                        Manage Meals ({meals.length})
+                    </h2>
+                    
+                    <div className="overflow-x-auto">
+                        <table className="w-full table-auto">
+                            <thead>
+                                <tr className="bg-gray-50">
+                                    <th className="px-4 py-2 text-left">Week</th>
+                                    <th className="px-4 py-2 text-left">Day</th>
+                                    <th className="px-4 py-2 text-left">Breakfast</th>
+                                    <th className="px-4 py-2 text-left">Lunch</th>
+                                    <th className="px-4 py-2 text-left">Dinner</th>
+                                    <th className="px-4 py-2 text-left">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {meals.map((meal) => (
+                                    <tr key={meal._id} className="border-b hover:bg-gray-50">
+                                        <td className="px-4 py-2">{meal.week}</td>
+                                        <td className="px-4 py-2">{meal.day}</td>
+                                        <td className="px-4 py-2">{meal.breakfast}</td>
+                                        <td className="px-4 py-2">{meal.lunch}</td>
+                                        <td className="px-4 py-2">{meal.dinner}</td>
+                                        <td className="px-4 py-2">
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleEdit(meal)}
+                                                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(meal._id)}
+                                                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {meals.length === 0 && (
+                            <div className="text-center py-8 text-gray-500">
+                                <p>No meals added yet</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
